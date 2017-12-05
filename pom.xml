@@ -16,6 +16,11 @@
         </dependency>
     </dependencies>
 
+    <properties>
+        <inputFiles>files</inputFiles>
+        <resultDir>result</resultDir>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -31,45 +36,7 @@
                 </executions>
                 <configuration>
                     <mainClass>org.onebusaway.gtfs_merge.GtfsMergerMain</mainClass>
-                    <arguments>
-                        <argument>--file=agency.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-                        <argument>--file=stops.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-                        <argument>--file=routes.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-                        <argument>--file=trips.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-                        <argument>--file=stop_times.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-                        <argument>--file=calendar.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-                        <argument>--file=calendar_dates.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-
-                        <argument>--file=shapes.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-                        <argument>--file=fare_attributes.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-                        <argument>--file=fare_rules.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-                        <argument>--file=frequencies.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-                        <argument>--file=transfers.txt</argument>
-                        <argument>--duplicateDetection=identity</argument>
-
-                        <argument>files/bra</argument>
-                        <argument>files/flt</argument>
-                        <argument>files/hed</argument>
-                        <argument>files/nri</argument>
-                        <argument>files/nsb</argument>
-                        <argument>files/opp</argument>
-                        <argument>files/ost</argument>
-                        <argument>files/rut</argument>
-                        <argument>files/tel</argument>
-                        <argument>files/vkt</argument>
-                        <argument>files/result</argument>
-                    </arguments>
+                    <commandlineArgs>--file=agency.txt --duplicateDetection=identity --file=stops.txt --duplicateDetection=identity --file=routes.txt --duplicateDetection=identity --file=trips.txt --duplicateDetection=identity --file=stop_times.txt --duplicateDetection=identity --file=calendar.txt --duplicateDetection=identity --file=calendar_dates.txt --duplicateDetection=identity --file=shapes.txt --duplicateDetection=identity --file=fare_attributes.txt --duplicateDetection=identity --file=fare_rules.txt --duplicateDetection=identity --file=frequencies.txt --duplicateDetection=identity --file=transfers.txt --duplicateDetection=identity ${inputFiles} ${resultDir}</commandlineArgs>
                 </configuration>
             </plugin>
         </plugins>
