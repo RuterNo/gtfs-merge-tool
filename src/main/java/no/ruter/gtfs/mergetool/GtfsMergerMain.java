@@ -15,17 +15,34 @@
  */
 package no.ruter.gtfs.mergetool;
 
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.AlreadySelectedException;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.MissingArgumentException;
+import org.apache.commons.cli.MissingOptionException;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.PosixParser;
+import org.apache.commons.cli.UnrecognizedOptionException;
 import org.onebusaway.csv_entities.schema.annotations.CsvFields;
 import org.onebusaway.gtfs.serialization.GtfsEntitySchemaFactory;
 import org.onebusaway.gtfs_merge.GtfsMerger;
 import org.onebusaway.gtfs_merge.strategies.AbstractEntityMergeStrategy;
 import org.onebusaway.gtfs_merge.strategies.EntityMergeStrategy;
 
-import java.io.*;
-import java.util.*;
-
-import static java.util.Arrays.asList;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class GtfsMergerMain {
     static final String ARG_FILE = "file";
@@ -52,7 +69,7 @@ public class GtfsMergerMain {
      */
     private Map<Class<?>, OptionHandler> _optionHandlersByEntityClass = new HashMap<Class<?>, OptionHandler>();
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         GtfsMergerMain m = new GtfsMergerMain();
         m.run(args);
     }
@@ -66,7 +83,7 @@ public class GtfsMergerMain {
      * {@link Runnable} Interface
      ****************************************************************************/
 
-    public void run(String[] args) throws IOException {
+    public void run(String[] args) throws Exception {
 
         if (needsHelp(args)) {
             printHelp();
@@ -76,23 +93,26 @@ public class GtfsMergerMain {
         try {
             CommandLine cli = _parser.parse(_options, args, true);
             runApplication(cli, args);
-        } catch (MissingOptionException ex) {
-            System.err.println("Missing argument: " + ex.getMessage());
+        }
+        catch (MissingOptionException ex) {
             printHelp();
-        } catch (MissingArgumentException ex) {
-            System.err.println("Missing argument: " + ex.getMessage());
+            throw new IllegalStateException("Missing argument: " + ex.getMessage());
+        }
+        catch (MissingArgumentException ex) {
             printHelp();
-        } catch (UnrecognizedOptionException ex) {
-            System.err.println("Unknown argument: " + ex.getMessage());
+            throw new IllegalStateException("Missing argument: " + ex.getMessage());
+        }
+        catch (UnrecognizedOptionException ex) {
             printHelp();
-        } catch (AlreadySelectedException ex) {
-            System.err.println("Argument already selected: " + ex.getMessage());
+            throw new IllegalStateException("Unknown argument: " + ex.getMessage());
+        }
+        catch (AlreadySelectedException ex) {
             printHelp();
-        } catch (ParseException ex) {
-            System.err.println(ex.getMessage());
+            throw new IllegalStateException("Argument already selected: " + ex.getMessage());
+        }
+        catch (ParseException ex) {
             printHelp();
-        } catch (Exception ex) {
-            ex.printStackTrace();
+            throw new IllegalStateException(ex.getMessage());
         }
     }
 
@@ -100,14 +120,14 @@ public class GtfsMergerMain {
      * Abstract Methods
      ****************************************************************************/
 
-    protected void buildOptions(Options options) {
+    private void buildOptions(Options options) {
         options.addOption(ARG_FILE, true, "GTFS file name");
         options.addOption(ARG_DUPLICATE_DETECTION, true, "duplicate detection strategy");
         options.addOption(ARG_LOG_DROPPED_DUPLICATES, false, "log dropped duplicates");
         options.addOption(ARG_ERROR_ON_DROPPED_DUPLICATES, false, "error on dropped duplicates");
     }
 
-    protected void printHelp(PrintWriter out, Options options) throws IOException {
+    private void printHelp(PrintWriter out, Options options) throws IOException {
 
         InputStream is = getClass().getResourceAsStream("usage.txt");
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
@@ -120,13 +140,13 @@ public class GtfsMergerMain {
         reader.close();
     }
 
-    protected void runApplication(CommandLine cli, String[] originalArgs) throws Exception {
+    private void runApplication(CommandLine cli, String[] originalArgs) throws Exception {
 
         String[] args = cli.getArgs();
 
         if (args.length < 2) {
             printHelp();
-            System.exit(-1);
+            throw new IllegalStateException("Merge failed!");
         }
 
         GtfsMerger merger = new GtfsMerger();
@@ -135,28 +155,21 @@ public class GtfsMergerMain {
 
         List<File> inputPaths = new ArrayList<File>();
 
-
-        System.err.println("ARGS: " + Arrays.asList(args));
-
-        if(args.length == 2) {
-            System.err.println("ARGS 2");
+        if (args.length == 2) {
             File inputDir = new File(args[0]);
-            if(inputDir.isDirectory()) {
-                System.err.println("ARGS isDir");
+            if (inputDir.isDirectory()) {
                 File[] files = inputDir.listFiles(new FileFilter() {
                     public boolean accept(File pathname) {
-                        System.err.println("ARGS PATH: " + pathname);
                         return pathname.isDirectory() && !pathname.getName().startsWith(".");
                     }
                 });
-
-                for (File file : files) {
-                    inputPaths.add(file);
+                if (files != null) {
+                    Collections.addAll(inputPaths, files);
                 }
             }
         }
 
-        if(inputPaths.size() == 0) {
+        if (inputPaths.size() == 0) {
             for (int i = 0; i < args.length - 1; ++i) {
                 inputPaths.add(new File(args[i]));
             }
@@ -166,18 +179,17 @@ public class GtfsMergerMain {
         merger.run(inputPaths, outputPath);
     }
 
-    /*****************************************************************************
-     * Protected Methods
-     ****************************************************************************/
+    /*  Private Methods */
 
-    protected void printHelp() throws IOException {
+    private void printHelp() throws IOException {
         printHelp(new PrintWriter(System.err, true), _options);
     }
 
     private boolean needsHelp(String[] args) {
         for (String arg : args) {
-            if (arg.equals("-h") || arg.equals("--help") || arg.equals("-help"))
+            if (arg.equals("-h") || arg.equals("--help") || arg.equals("-help")) {
                 return true;
+            }
         }
         return false;
     }
@@ -207,7 +219,8 @@ public class GtfsMergerMain {
                 }
                 mergeStrategy = getMergeStrategyForEntityClass(entityClass, merger);
                 currentOptionHandler = getOptionHandlerForEntityClass(entityClass);
-            } else {
+            }
+            else {
                 if (currentOptionHandler == null) {
                     throw new IllegalArgumentException(
                             "you must specify a --file argument first before specifying file-specific arguments");
