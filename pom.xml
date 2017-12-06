@@ -26,8 +26,8 @@
     </dependencies>
 
     <properties>
-        <inputFiles>files</inputFiles>
-        <resultDir>result</resultDir>
+        <inputFiles>"The 'inputFiles' Maven property is not set!"</inputFiles>
+        <resultDir>"The 'resultDir' Maven property is not set!"</resultDir>
     </properties>
 
     <build>

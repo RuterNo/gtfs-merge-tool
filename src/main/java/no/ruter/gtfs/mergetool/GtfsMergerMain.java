@@ -163,13 +163,14 @@ public class GtfsMergerMain {
                         return pathname.isDirectory() && !pathname.getName().startsWith(".");
                     }
                 });
-                if (files != null) {
+                if (files != null && files.length > 0) {
                     Collections.addAll(inputPaths, files);
+                    Collections.sort(inputPaths);
                 }
             }
         }
 
-        if (inputPaths.size() == 0) {
+        if (inputPaths.isEmpty()) {
             for (int i = 0; i < args.length - 1; ++i) {
                 inputPaths.add(new File(args[i]));
             }
